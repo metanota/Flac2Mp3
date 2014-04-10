@@ -42,7 +42,7 @@ getFlacs path = do
 
 main :: IO ()
 main = do
-       flacs <- getArgs >>= mapM getFlacs >>= (concat >>> sort >>> nub >>> return)
+       flacs <- getArgs >>= mapM getFlacs >>= (concat >>> nub >>> sort >>> return)
        forM_ flacs $ decode Flac
        let wavs = map (\flac -> dropExtension flac ++ extension Wav) flacs
        forM_ wavs $ encode Mp3
