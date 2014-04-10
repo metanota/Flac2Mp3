@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiWayIf #-}
 
+import Control.Arrow           ((>>>))
 import Control.Monad           (forM_)
 import Data.List               (isSuffixOf, nub, sort)
 import GHC.IO.Exception        (ExitCode)
@@ -37,11 +38,11 @@ getFlacs path = do
                 files  <- if | isDir     -> getDirectoryContents path >>= mapM (canonicalizePath . (path </>))
                              | isFile    -> fmap (:[]) $ canonicalizePath path
                              | otherwise -> return []
-                return $ sort $ filter (isSuffixOf $ extension Flac) files
+                return $ filter (isSuffixOf $ extension Flac) files
 
 main :: IO ()
 main = do
-       flacs <- getArgs >>= mapM getFlacs >>= return . nub . concat
+       flacs <- getArgs >>= mapM getFlacs >>= (concat >>> sort >>> nub >>> return)
        forM_ flacs $ decode Flac
        let wavs = map (\flac -> dropExtension flac ++ extension Wav) flacs
        forM_ wavs $ encode Mp3
