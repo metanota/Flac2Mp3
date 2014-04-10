@@ -1,12 +1,12 @@
 {-# LANGUAGE MultiWayIf #-}
 
-import Control.Monad           (forM_, liftM)
-import Data.List               (isSuffixOf)
+import Control.Monad           (forM_)
+import Data.List               (isSuffixOf, nub, sort)
 import GHC.IO.Exception        (ExitCode)
 import System.Cmd              (system)
-import System.Directory        (doesDirectoryExist, doesFileExist, getDirectoryContents, removeFile)
+import System.Directory        (canonicalizePath, doesDirectoryExist, doesFileExist, getDirectoryContents, removeFile)
 import System.Environment      (getArgs)
-import System.FilePath         (combine, dropExtension)
+import System.FilePath         ((</>), dropExtension)
 
 data Codec = Flac | Wav | Mp3
 
@@ -30,22 +30,18 @@ runCommand :: String -> String -> IO ExitCode
 runCommand c a = system $ c ++ " " ++ wrapArg a
                  where wrapArg x = "\"" ++ x ++ "\""
 
-filterBy :: String -> [FilePath] -> [FilePath]
-filterBy ext = reverse . filter (isSuffixOf ext)
-
-getFilesFiltered :: FilePath -> String -> IO [FilePath]
-getFilesFiltered path ext = do
-                            isDir  <- doesDirectoryExist path
-                            isFile <- doesFileExist      path
-                            files  <- if | isDir     -> liftM (map (combine path)) $ getDirectoryContents path
-                                         | isFile    -> return $ [path]
-                                         | otherwise -> return $ []
-                            return $ filterBy ext files
+getFlacs :: FilePath -> IO [FilePath]
+getFlacs path = do
+                isDir  <- doesDirectoryExist path
+                isFile <- doesFileExist      path
+                files  <- if | isDir     -> getDirectoryContents path >>= mapM (canonicalizePath . (path </>))
+                             | isFile    -> fmap (:[]) $ canonicalizePath path
+                             | otherwise -> return []
+                return $ sort $ filter (isSuffixOf $ extension Flac) files
 
 main :: IO ()
 main = do
-       path  <- liftM head getArgs
-       flacs <- getFilesFiltered path $ extension Flac
+       flacs <- getArgs >>= mapM getFlacs >>= return . nub . concat
        forM_ flacs $ decode Flac
        let wavs = map (\flac -> dropExtension flac ++ extension Wav) flacs
        forM_ wavs $ encode Mp3
