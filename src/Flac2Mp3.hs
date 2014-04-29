@@ -1,6 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
 
-import Control.Arrow           ((>>>))
 import Control.Monad           (forM_)
 import Data.List               (isSuffixOf, nub, sort)
 import GHC.IO.Exception        (ExitCode)
@@ -8,6 +7,7 @@ import System.Cmd              (system)
 import System.Directory        (canonicalizePath, doesDirectoryExist, doesFileExist, getDirectoryContents, removeFile)
 import System.Environment      (getArgs)
 import System.FilePath         ((</>), dropExtension)
+import Text.Printf             (printf)
 
 data Codec = Flac | Wav | Mp3
 
@@ -27,9 +27,8 @@ encode :: Codec -> FilePath -> IO ExitCode
 encode Mp3 = runCommand "lame -b 320"
 encode _   = undefined
 
-runCommand :: String -> String -> IO ExitCode
-runCommand c a = system $ c ++ " " ++ wrapArg a
-                 where wrapArg x = "\"" ++ x ++ "\""
+runCommand :: String -> FilePath -> IO ExitCode
+runCommand c a = system $ printf "%s \"%s\"" c a
 
 getFlacs :: FilePath -> IO [FilePath]
 getFlacs path = do
@@ -42,7 +41,7 @@ getFlacs path = do
 
 main :: IO ()
 main = do
-       flacs <- getArgs >>= mapM getFlacs >>= (concat >>> nub >>> sort >>> return)
+       flacs <- (return . sort . nub . concat) =<< mapM getFlacs =<< getArgs
        forM_ flacs $ decode Flac
        let wavs = map (\flac -> dropExtension flac ++ extension Wav) flacs
        forM_ wavs $ encode Mp3
