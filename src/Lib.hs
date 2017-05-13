@@ -7,7 +7,7 @@ module Lib
 import Control.Monad           (forM_)
 import Data.List               (isSuffixOf, nub, sort)
 import GHC.IO.Exception        (ExitCode)
-import System.Cmd              (system)
+import System.Process          (system)
 import System.Directory        (canonicalizePath, doesDirectoryExist, doesFileExist, getDirectoryContents, removeFile)
 import System.Environment      (getArgs)
 import System.FilePath         ((</>), dropExtension)
