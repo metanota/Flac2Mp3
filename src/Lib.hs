@@ -1,5 +1,9 @@
 {-# LANGUAGE MultiWayIf #-}
 
+module Lib
+    ( convert
+    ) where
+
 import Control.Monad           (forM_)
 import Data.List               (isSuffixOf, nub, sort)
 import GHC.IO.Exception        (ExitCode)
@@ -39,8 +43,8 @@ getFlacs path = do
                              | otherwise -> return []
                 return $ filter (isSuffixOf $ extension Flac) files
 
-main :: IO ()
-main = do
+convert :: IO ()
+convert = do
        flacs <- (return . sort . nub . concat) =<< mapM getFlacs =<< getArgs
        forM_ flacs $ decode Flac
        let wavs = map (\flac -> dropExtension flac ++ extension Wav) flacs
